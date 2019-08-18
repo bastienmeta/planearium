@@ -87,7 +87,7 @@ def parse_info(infoStr):
 
 	return info
 
-def query_state(obj, center, t, step):
+def query(obj, center, t, step):
 	tn = telnetlib.Telnet(HOST, PORT)
 
 	tn.read_until("Horizons> ")
@@ -122,6 +122,12 @@ def query_state(obj, center, t, step):
 	footerString = tn.read_until("Author")
 	tn.close()
 
+	return infoString, headerString, elementsString, footerString
+
+def query_state(obj, center, step):
+	infoString, _, elementsString_v, _ = query(obj, center, "v", step)
+	_, _, elementsString_e, _ = query(obj, center, "e", step)
+
 	elements={}
 	# elements["type"]=t
 	# elements["header"]=headerString
@@ -129,13 +135,14 @@ def query_state(obj, center, t, step):
 	elements["info"]=parse_info(infoString)
 	elements["info"]["name"]=obj
 	elements["info"]["ref"]=center
-	elements["ephemerids"]=parse_ephemerids(elementsString, t)
+	elements["keplerian"]=parse_ephemerids(elementsString_v, "v")
+	elements["cartesian"]=parse_ephemerids(elementsString_e, "e")
 
 	return elements
 
 if __name__ == "__main__":
 
-	t = "v"
+	t = "e"
 	d="1d"
 	requests = [
 		("Sun", "10", "0", t, d),
@@ -154,7 +161,7 @@ if __name__ == "__main__":
 
 	for d in requests:
 		print "Processing : " + d[0]
-		objects[d[0]] = query_state(d[1], d[2], d[3], d[4])
+		objects[d[0]] = query_state(d[1], d[2], d[4])
 
 	with open('astres.json', 'w') as outfile:
 		json.dump(objects, outfile, indent=4)

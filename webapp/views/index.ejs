@@ -86,9 +86,9 @@ $( document ).ready(function() {
                     var sphereWidthDivisions = 32;
                     var sphereHeightDivisions = 16;
                     var sphereMat;
-                    var sphereRadius = Math.log(o.info.mean_radius)/149.598000 ;
+                    var sphereRadius = 1.2*Math.log(o.info.mean_radius)/149.598000 ;
                     if(name == "Sun"){
-                        light.position.set(o.ephemerids[0].x, o.ephemerids[0].z, o.ephemerids[0].y);
+                        light.position.set(o.cartesian[0].x, o.cartesian[0].z, o.cartesian[0].y);
                         sphereMat = new THREE.MeshPhongMaterial({color: 0xCCAA88, emissive:0xCCAA88});
                     }
                     else{
@@ -97,10 +97,31 @@ $( document ).ready(function() {
                     var sphereGeo = new THREE.SphereBufferGeometry(sphereRadius, sphereWidthDivisions, sphereHeightDivisions);
 
                     var mesh = new THREE.Mesh(sphereGeo, sphereMat);
-                    mesh.position.set(o.ephemerids[0].x, o.ephemerids[0].z, o.ephemerids[0].y);
+                    mesh.position.set(o.cartesian[0].x, o.cartesian[0].y, o.cartesian[0].z);
                     mesh.name = name;
 
-                    scene.add(mesh)
+                    scene.add(mesh);
+
+
+                    var ecc = response[name].keplerian[0].ec;
+                    var sma = response[name].keplerian[0].a;
+                    var inc = response[name].keplerian[0].in;
+
+                    var curve = new THREE.EllipseCurve(
+                        0,  0,            // ax, aY
+                        sma, sma*Math.sqrt(1-ecc*ecc),           // xRadius, yRadius
+                        0,  2 * Math.PI,  // aStartAngle, aEndAngle
+                        false,            // aClockwise
+                        0                 // aRotation
+                    );
+
+                    var points = curve.getPoints( 50 );
+                    var geometry = new THREE.BufferGeometry().setFromPoints( points );
+                    var material = new THREE.LineBasicMaterial( { color : 0xFFFFFF } );
+
+                    // Create the final object to add to the scene
+                    var ellipse = new THREE.Line( geometry, material );
+                    scene.add(ellipse);
                 }
             }
         });
