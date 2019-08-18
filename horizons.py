@@ -66,19 +66,22 @@ def parse_ephemerids(elementsString, t):
 def parse_info(infoStr):
 	info = {}
 
-	name = re.findall("([A-Za-z]*) / \(([A-Za-z]*)\)", infoStr)
-	info["name"], info["ref"] = [name[0][i] for i in [0,1]]
+	# name = re.findall("([A-Za-z]*) / \(([A-Za-z]*)\)", infoStr)
+	# info["name"], info["ref"] = [name[0][i] for i in [0,1]]
 
-	info["mean_radius"] = re.findall("Mean Radius \(km\) *= *([0-9.]*)", infoStr)[0]
-	info["density"] = re.findall("Density \(g/cm\^3\) *= *([0-9.]*) ", infoStr)[0]
-	info["mass"] = re.findall("Mass \(10\^19 kg\) *= *([0-9.]*)", infoStr)[0]
-	info["albedo"] = re.findall("Geometric Albedo *= *([0-9.]*)", infoStr)[0]
-	info["gm"] = re.findall("GM \(km\^3/s\^2\) *= *([0-9.]*)", infoStr)[0]
-	info["semi_major_axis"] = re.findall("Semi\-major axis, a \(km\) *= *([0-9.]*\(.*\))", infoStr)[0]
-	info["orbital_period"] = re.findall("Orbital period *= *([0-9.]* *[A-Za-z])", infoStr)[0]
-	info["eccentricity"] = re.findall("Eccentricity, e *= *([0-9.]*)", infoStr)[0]
-	info["inclination"] = re.findall("Inclination, i  \(deg\) *= *([0-9.]*)", infoStr)[0]
+	# info["mean_radius"] = float(re.findall("Mean Radius \(km\) *= *([0-9.]*)", infoStr)[0])
+	# info["density"] = float(re.findall("Density .* *= *([0-9.]*) ", infoStr)[0])
+	# info["mass"] = float(re.findall("Mass \(10\^19 kg\) *= *([0-9.]*)", infoStr)[0])
+	# info["albedo"] = float(re.findall("Geometric Albedo *= *([0-9.]*)", infoStr)[0])
+	# info["gm"] = float(re.findall("GM \(km\^3/s\^2\) *= *([0-9.]*)", infoStr)[0])
+	# info["semi_major_axis"] = re.findall("Semi\-major axis, a \(km\) *= *([0-9.]*\(.*\))", infoStr)[0]
+	# info["orbital_period"] = re.findall("Orbital period *= *([0-9.]* *[A-Za-z])", infoStr)[0]
+	# info["eccentricity"] = float(re.findall("Eccentricity, e *= *([0-9.]*)", infoStr)[0])
+	# info["inclination"] = float(re.findall("Inclination, i  \(deg\) *= *([0-9.]*)", infoStr)[0])
 
+	r = re.findall("[Rr]adius .* *= *([0-9.]*)\+", infoStr)
+	if(len(r) > 0):
+		info["mean_radius"] = float(r[0])
 
 	return info
 
@@ -98,13 +101,15 @@ def query_state(obj, center, t, step):
 	elif t == "v":
 		tn.write("v \n")
 		tn.read_until("Coordinate center [ <id>,coord,geo  ] : ")
-		tn.write("@" + c + "\n")
+		tn.write("@" + center + "\n")
 
 	tn.read_until("Reference plane [eclip, frame, body ] : ")
 	tn.write("eclip \n")
-	tn.read_until("Starting TDB [>=   1849-Dec-28 00:00] : ")
+	tn.read_until(" : ")
+	tn.write("2019-Aug-16 00:00")
 	tn.write("\n")
-	tn.read_until("Ending   TDB [<=   2150-Jan-08 00:00] : ")
+	tn.read_until(" : ")
+	tn.write("2019-Aug-17 00:00")	
 	tn.write("\n")
 	tn.read_until("Output interval [ex: 10m, 1h, 1d, ? ] : ")
 	tn.write(step + "\n")
@@ -116,15 +121,38 @@ def query_state(obj, center, t, step):
 	tn.close()
 
 	elements={}
-	elements["type"]=t
-	elements["header"]=headerString
-	elements["footer"]=footerString
+	# elements["type"]=t
+	# elements["header"]=headerString
+	# elements["footer"]=footerString
 	elements["info"]=parse_info(infoString)
+	elements["info"]["name"]=obj
+	elements["info"]["ref"]=center
 	elements["ephemerids"]=parse_ephemerids(elementsString, t)
 
 	return elements
 
 if __name__ == "__main__":
-	e = query_state(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-	print json.dumps(e, indent=4)
 
+	t = "v"
+	d="1d"
+	requests = [
+		("Sun", "10", "0", t, d),
+		("Mercury", "199", "0", t, d),
+		("Venus", "299", "0", t, d),
+		("Earth", "399", "0", t, d),
+		("Mars", "499", "0", t, d),
+		("Jupiter", "599", "0", t, d),
+		("Saturn", "699", "0", t, d),
+		("Uranus", "799", "0", t, d),
+		("Neptune", "899", "0", t, d),
+		("Pluto", "999", "0", t, d)
+	]
+
+	objects = {}
+
+	for d in requests:
+		print "Processing : " + d[0]
+		objects[d[0]] = query_state(d[1], d[2], d[3], d[4])
+
+	with open('astres.json', 'w') as outfile:
+		json.dump(objects, outfile, indent=4)
