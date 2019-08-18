@@ -6,6 +6,7 @@
 </head> 
 <body>
 <canvas id="c"></canvas>
+<script type="text/javascript" src="astres.json"></script>
   <script src="https://threejsfundamentals.org/threejs/resources/threejs/r105/three.min.js"></script>
 <script src="https://threejsfundamentals.org/threejs/resources/threejs/r105/js/controls/OrbitControls.js"></script>
 <script src="https://threejsfundamentals.org/threejs/../3rdparty/dat.gui.min.js"></script>	<script> 
@@ -19,7 +20,7 @@ class astre {
 	constructor(){
 		this.name = "";
 		this.position = new THREE.Vector3(0,0,0);
-		this.diameter = 1;
+		this.radius = 1;
 		this.mass = 1;
 		this.color=0xFFFFFF;
 	}
@@ -31,10 +32,10 @@ function main() {
 
   const fov = 45;
   const aspect = 2;  // the canvas default
-  const near = 0.1;
-  const far = 100;
+  const near = 0.01;
+  const far = 10;
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.set(0, 10, 20);
+  camera.position.set(0, 0, 1);
 
   class MinMaxGUIHelper {
     constructor(obj, minProp, maxProp, minDif) {
@@ -76,33 +77,9 @@ function main() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('black');
 
-  // {
-    // const loader = new THREE.TextureLoader();
-    // const texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
-    // texture.wrapS = THREE.RepeatWrapping;
-    // texture.wrapT = THREE.RepeatWrapping;
-    // texture.magFilter = THREE.NearestFilter;
-    // const repeats = planeSize / 2;
-    // texture.repeat.set(repeats, repeats);
+    var json = JSON.parse();
+    console.log(json);
 
-    // const planeGeo = new THREE.PlaneBufferGeometry(planeSize, planeSize);
-    // const planeMat = new THREE.MeshPhongMaterial({
-    //   map: texture,
-    //   side: THREE.DoubleSide,
-    // });
-    // const mesh = new THREE.Mesh(planeGeo, planeMat);
-    // mesh.rotation.x = Math.PI * -.5;
-    // scene.add(mesh);
-  // }
-  // {
-  //   const cubeSize = 4;
-  //   const cubeGeo = new THREE.BoxBufferGeometry(cubeSize, cubeSize, cubeSize);
-  //   const cubeMat = new THREE.MeshPhongMaterial({color: '#8AC'});
-  //   const mesh = new THREE.Mesh(cubeGeo, cubeMat);
-  //   mesh.position.set(cubeSize + 1, cubeSize / 2, 0);
-  //   scene.add(mesh);
-  // }
-  {
     const sphereRadius = 3;
     const sphereWidthDivisions = 32;
     const sphereHeightDivisions = 16;
@@ -111,9 +88,7 @@ function main() {
     const mesh = new THREE.Mesh(sphereGeo, sphereMat);
     mesh.position.set(-sphereRadius - 1, sphereRadius + 2, 0);
     scene.add(mesh);
-  }
 
-  {
     const color = 0xFFFFFF;
     const intensity = 1;
     const light = new THREE.DirectionalLight(color, intensity);
@@ -121,7 +96,6 @@ function main() {
     light.target.position.set(-5, 0, 0);
     scene.add(light);
     scene.add(light.target);
-  }
 
   function resizeRendererToDisplaySize(renderer) {
     const canvas = renderer.domElement;
