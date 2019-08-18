@@ -21,7 +21,8 @@ def parse_ephemerids(elementsString, t):
 		VZ = re.findall("VZ=([-+ .0-9E]*)", elementsString)
 
 		for i in range(len(D)):
-			elements[D[i]] = {
+			elements[i] = {
+				"date": D[i],
 				"x" : float(X[i]),
 				"y" : float(Y[i]),
 				"z" : float(Z[i]),
@@ -46,7 +47,8 @@ def parse_ephemerids(elementsString, t):
 		PR = re.findall("PR=([-+ .0-9E]*)", elementsString)
 
 		for i in range(len(D)):
-			elements[D[i]] = {
+			elements[i] = {
+				"date": D[i],
 				"ec": float(EC[i]),
 				"qr": float(QR[i]),
 				"in": float(IN[i]),
