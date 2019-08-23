@@ -2,14 +2,37 @@
 <head> 
 	<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 	<title>plane arium</title> 
-	<style> body { margin: 0; } canvas { width: 100%; height: 100% } </style>
+	<style>
+
+	body {
+  padding: 0;
+  margin: 0;
+}
+canvas { width: 100%; height: 100% } 
+#container {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+.text-label {
+  color: #fff;
+  font-family: "Fira Mono", Monaco, "Andale Mono", "Lucida Console", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace;
+  margin: -5px 0 0 15px;
+  pointer-events:none;
+}
+</style>
 </head> 
 <body>
-<canvas id="c"></canvas>
+<div id="container">
+<canvas id="c"></canvas></div>
   <script src="https://threejsfundamentals.org/threejs/resources/threejs/r105/three.min.js"></script>
 <script src="https://threejsfundamentals.org/threejs/resources/threejs/r105/js/controls/OrbitControls.js"></script>
 <script src="https://threejsfundamentals.org/threejs/../3rdparty/dat.gui.min.js"></script>	
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" ></script>
+<script src="/ammo.js"> </script> 
 <script src="/app.js"> </script> 
+
 </body> 
 </html>

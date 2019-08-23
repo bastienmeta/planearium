@@ -3,7 +3,8 @@
         "info": {
             "mean_radius": 2440.0, 
             "ref": "0", 
-            "name": "199"
+            "name": "199",
+            "mass": 1330.2
         }, 
         "keplerian": {
             "0": {
@@ -62,7 +63,8 @@
         "info": {
             "ref": "0", 
             "name": "10",
-            "mean_radius": 695510
+            "mean_radius": 695510,
+            "mass": 988435000
         }, 
         "keplerian": {
             "0": {
@@ -121,7 +123,8 @@
         "info": {
             "mean_radius": 24766.0, 
             "ref": "0", 
-            "name": "899"
+            "name": "899",
+            "mass": 102430
         }, 
         "keplerian": {
             "0": {
@@ -180,7 +183,8 @@
         "info": {
             "mean_radius": 1188.3, 
             "ref": "0", 
-            "name": "999"
+            "name": "999",
+            "mass": 13.1
         }, 
         "keplerian": {
             "0": {
@@ -239,7 +243,8 @@
         "info": {
             "mean_radius": 66854.0, 
             "ref": "0", 
-            "name": "599"
+            "name": "599",
+            "mass": 1899000
         }, 
         "keplerian": {
             "0": {
@@ -298,7 +303,8 @@
         "info": {
             "mean_radius": 24973.0, 
             "ref": "0", 
-            "name": "799"
+            "name": "799",
+            "mass": 86832
         }, 
         "keplerian": {
             "0": {
@@ -357,7 +363,8 @@
         "info": {
             "mean_radius": 3389.92, 
             "ref": "0", 
-            "name": "499"
+            "name": "499",
+            "mass": 641.85
         }, 
         "keplerian": {
             "0": {
@@ -416,7 +423,8 @@
         "info": {
             "mean_radius": 5972.19, 
             "ref": "0", 
-            "name": "399"
+            "name": "399",
+            "mass": 5974.2
         }, 
         "keplerian": {
             "0": {
@@ -475,7 +483,8 @@
         "info": {
             "mean_radius": 6051.84, 
             "ref": "0", 
-            "name": "299"
+            "name": "299",
+            "mass": 4868.5
         }, 
         "keplerian": {
             "0": {
@@ -534,7 +543,8 @@
         "info": {
             "mean_radius": 54364.0, 
             "ref": "0", 
-            "name": "699"
+            "name": "699",
+            "mass": 568460
         }, 
         "keplerian": {
             "0": {
