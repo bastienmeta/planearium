@@ -28,12 +28,13 @@ function update_mouse() {
   // if there is one (or more) intersections
   if (intersects.length > 0) {
     // if the closest object intersected is not the currently stored intersection object
-    if (intersects[0].object != hover_object) {
+    if (intersects[0].object != hover_object && intersects[0].object.name != "line") {
       // restore previous intersection object (if it exists) to its original color
       if (hover_object)
         hover_object.material.color.setHex(hover_object.currentHex);
       // store reference to closest object as current intersection object
       hover_object = intersects[0].object;
+      console.log(hover_object);
       // store color of closest object (for later restoration)
       hover_object.currentHex = hover_object.material.color.getHex();
       // set a new color for closest object
@@ -124,20 +125,28 @@ function update_mouse() {
     //     }
     // }
 
+    var distanceScale = 149598000;
+    var massScale = 1e21;
+    var radiusScale = 1/500.0;
+    var velScale = 15;
+
     var Astres = function(name, eph){
         this.name = name;
 
         this.mass = eph.info.mass;  
-        this.radius = 1;//eph.info.mean_radius/149.598000;
+        this.radius = eph.info.mean_radius*radiusScale;
         this.x = eph.cartesian["0"].x;
         this.y = eph.cartesian["0"].y;
         this.z = eph.cartesian["0"].z;
-        this.dx = eph.cartesian["0"].vx;
-        this.dy = eph.cartesian["0"].vy;
-        this.dz = eph.cartesian["0"].vz;  
+        this.dx = eph.cartesian["0"].vx*velScale; 
+        this.dy = eph.cartesian["0"].vy*velScale;
+        this.dz = eph.cartesian["0"].vz*velScale;  
         this.quat = {x: 0, y: 0, z: 0, w: 1};
+        this.prev_x = this.x;
+        this.prev_y = this.y;
+        this.prev_z = this.z;
 
-        astresArray.push(this);
+        this.lines = [];
     }
 
     Astres.prototype = {
@@ -146,7 +155,7 @@ function update_mouse() {
         build_mesh: function(){
             var sphereMat;
 
-            var sphereRadius = 1.3*Math.log(this.radius)/149.598000 ;
+            var sphereRadius = 4*Math.log(this.radius)/149.598000 ;
             if(this.name == "Sun"){
                 // sphereRadius = 1.2*Math.log(695510)/149.598000;
                 sphereMat = new THREE.MeshPhongMaterial({color: 0xCCAA88, emissive:0xCCAA88});
@@ -163,26 +172,26 @@ function update_mouse() {
             this.mesh = new THREE.Mesh(sphereGeo, sphereMat);
             this.mesh.position.set(this.x, this.y, this.z);
             this.mesh.name = name;
+            this.mesh.astre = this;
         },
 
-        setup_physics: function(){
-            let transform = new Ammo.btTransform();
-            transform.setIdentity();
-            transform.setOrigin( new Ammo.btVector3( this.x, this.y, this.z ) );
-            transform.setRotation( new Ammo.btQuaternion( this.quat.x, this.quat.y, this.quat.z, this.quat.w ) );
-            let motionState = new Ammo.btDefaultMotionState( transform );
-            let colShape = new Ammo.btSphereShape( this.radius );
-            colShape.setMargin( 0.05 );
-            let localInertia = new Ammo.btVector3( this.dx, this.dy, this.dz );
-            colShape.calculateLocalInertia( this.mass, localInertia );
-            let rbInfo = new Ammo.btRigidBodyConstructionInfo( this.mass, motionState, colShape, localInertia );
-            let body = new Ammo.btRigidBody( rbInfo );
-            physicsWorld.addRigidBody( body );
+        // setup_physics: function(){
+        //     let transform = new Ammo.btTransform();
+        //     transform.setIdentity();
+        //     transform.setOrigin( new Ammo.btVector3( this.x, this.y, this.z ) );
+        //     transform.setRotation( new Ammo.btQuaternion( this.quat.x, this.quat.y, this.quat.z, this.quat.w ) );
+        //     let motionState = new Ammo.btDefaultMotionState( transform );
+        //     let colShape = new Ammo.btSphereShape( this.radius );
+        //     colShape.setMargin( 0.05 );
+        //     let localInertia = new Ammo.btVector3( this.dx, this.dy, this.dz );
+        //     colShape.calculateLocalInertia( this.mass, localInertia );
+        //     let rbInfo = new Ammo.btRigidBodyConstructionInfo( this.mass, motionState, colShape, localInertia );
+        //     let body = new Ammo.btRigidBody( rbInfo );
+        //     physicsWorld.addRigidBody( body );
             
-            this.mesh.userData.physicsBody = body;
-            this.mesh.astre = this;
-            rigidBodies.push(this.mesh);            
-        },
+        //     this.mesh.userData.physicsBody = body;
+        //     rigidBodies.push(this.mesh);            
+        // },
 
         update_pos: function(x, y, z){
             this.x = x;
@@ -199,7 +208,71 @@ function update_mouse() {
         string: function(){
             return  this.name + "\n" + 
                     this.mass + "\n" +
-                    this.x + " " + this.y + " " + this.z;
+                    this.radius + "\n" +
+                    this.x + " " + this.y + " " + this.z + "\n" +
+                    this.x + " " + this.y + " " + this.z + "\n";
+        },
+
+        compute_gravity: function(){
+            var a = {
+                x: 0,
+                y: 0,
+                z: 0
+            };
+
+            let G = 6.67408e-11;
+            let m1 = this.mass;
+
+            for(b in astresArray){
+                let body = astresArray[b];
+                if(this==body)
+                    continue;
+
+                let m2 = body.mass;                
+                let d = Math.sqrt((this.x-body.x)**2 + (this.y-body.y)**2 + (this.z-body.z)**2);
+                let tmp = (G * m2) / d**3;
+
+                a.x += tmp * (body.x - this.x);
+                a.y += tmp * (body.y - this.y);
+                a.z += tmp * (body.z - this.z);
+            }
+            // console.log(a);
+            return a;
+        },
+
+        update_trail: function(){
+            if(this.lines.length <= 1000){
+                var material = new THREE.LineBasicMaterial( { color: 0x0099ff } );
+
+                var geometry = new THREE.Geometry(); 
+                geometry.vertices.push(new THREE.Vector3( this.prev_x, this.prev_y, this.prev_z) ); 
+                geometry.vertices.push(new THREE.Vector3( this.x, this.y, this.z ) ); 
+
+
+                var line = new THREE.Line( geometry, material );
+                line.name = this.name+"_line_"+this.lines.length;
+                scene.add(line);
+
+                this.lines.push(line);
+            }
+            else{
+                var line = this.lines.shift();
+                line.geometry.vertices[0].x = this.prev_x;
+                line.geometry.vertices[0].y = this.prev_y;
+                line.geometry.vertices[0].z = this.prev_z;
+
+                line.geometry.vertices[1].x = this.x;
+                line.geometry.vertices[1].y = this.y;
+                line.geometry.vertices[1].z = this.z;
+               
+                line.geometry.verticesNeedUpdate = true;
+
+                this.lines.push(line);
+            }
+
+            this.prev_x = this.x;
+            this.prev_y = this.y;
+            this.prev_z = this.z;            
         },
 
         draw_ellipse: function(){
@@ -244,8 +317,7 @@ function update_mouse() {
 
     var text;
 
-    var rigidBodies = []
-    var astresArray = [];
+    // var rigidBodies = [];
 
     var sphereWidthDivisions = 32;
     var sphereHeightDivisions = 16;
@@ -259,7 +331,7 @@ function update_mouse() {
 
         const fov = 55;
         const aspect = 2;  // the canvas default
-        const near = 0.1;
+        const near = 0.01;
         const far = 10000;
         camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         camera.position.set(0, 0, 3);
@@ -278,19 +350,19 @@ function update_mouse() {
 
         controls = new THREE.OrbitControls(camera, canvas);
         controls.target.set(0, 0, 0);
-        controls.zoomSpeed = 0.25;
+        controls.zoomSpeed = 2;
         controls.update();
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color('black');
 
         const color = 0xFFFFBB;
-        const intensity = 1;
+        const intensity = 5;
         sunlight = new THREE.PointLight(color, intensity);
-        sunlight.position.set(0, 0, 1000);
+        sunlight.position.set(0,0,10);
         scene.add(sunlight);
 
-        const ambient = new THREE.AmbientLight(0xFFFFFF, 0.3)
+        const ambient = new THREE.AmbientLight(0xFFFFFF, 10)
         scene.add(ambient);
 
         // var axesHelper = new THREE.AxesHelper( 1 );
@@ -298,45 +370,98 @@ function update_mouse() {
         text = create_text();
         document.querySelector("#container").appendChild(text.element);
 
-        fetch_astres();
     }
 
     function setup_physics(){
 
-        let collisionConfiguration  = new Ammo.btDefaultCollisionConfiguration(),
-            dispatcher              = new Ammo.btCollisionDispatcher(collisionConfiguration),
-            overlappingPairCache    = new Ammo.btDbvtBroadphase(),
-            solver                  = new Ammo.btSequentialImpulseConstraintSolver();
+        // let collisionConfiguration  = new Ammo.btDefaultCollisionConfiguration(),
+        //     dispatcher              = new Ammo.btCollisionDispatcher(collisionConfiguration),
+        //     overlappingPairCache    = new Ammo.btDbvtBroadphase(),
+        //     solver                  = new Ammo.btSequentialImpulseConstraintSolver();
 
-        physicsWorld           = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-        physicsWorld.setGravity(new Ammo.btVector3(0, 0, 0));
+        // physicsWorld           = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+        // physicsWorld.setGravity(new Ammo.btVector3(0, 0, 0));
     }
 
-    function update_physics( deltaTime ){
-        // Step world
-        physicsWorld.stepSimulation( deltaTime, 10 );
-        // Update rigid bodies
-        for ( let i = 0; i < rigidBodies.length; i++ ) {
-            let objThree = rigidBodies[ i ];
-            let objAmmo = objThree.userData.physicsBody;
-            let ms = objAmmo.getMotionState();
-            if ( ms ) {
-                ms.getWorldTransform( tmpTrans );
-                let p = tmpTrans.getOrigin();
-                let q = tmpTrans.getRotation();
-                objThree.position.set( p.x(), p.y(), p.z() );
-                objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+    function update_physics( dt, astresArray ){
+        for(b in astresArray){
+            let body = astresArray[b];
+            let acceleration = body.compute_gravity();
+            body.dx += acceleration.x * dt;
+            body.dy += acceleration.y * dt;
+            body.dz += acceleration.z * dt;   
 
-                if(objThree.name == "Earth")
-                    console.log(p.x() + " " + p.y() + " " + p.z());
-                objThree.astre.update_pos(p.x(), p.y(), p.z());
+            body.x += body.dx * dt;
+            body.y += body.dy * dt;
+            body.z += body.dz * dt;
 
-            }
+            body.mesh.position.set(body.x, body.y, body.z);
+
+            body.update_trail();
         }
+        // Step world
+        // physicsWorld.stepSimulation( deltaTime, 10 );
+        // // Update rigid bodies
+        // for ( let i = 0; i < rigidBodies.length; i++ ) {
+        //     let objThree = rigidBodies[ i ];
+        //     let objAmmo = objThree.userData.physicsBody;
+        //     let ms = objAmmo.getMotionState();
+        //     if ( ms ) {
+        //         ms.getWorldTransform( tmpTrans );
+        //         let p = tmpTrans.getOrigin();
+        //         let q = tmpTrans.getRotation();
+        //         objThree.position.set( p.x(), p.y(), p.z() );
+        //         objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+        //         if(objThree.name == "Earth")
+        //             console.log(p.x() + " " + p.y() + " " + p.z());
+        //         objThree.astre.update_pos(p.x(), p.y(), p.z());
+
+        //     }
+        // }
     }
 
 
-    function fetch_astres(){
+
+    function resizeRendererToDisplaySize(renderer) {
+        const canvas = renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+            renderer.setSize(width, height, false);
+        }
+        return needResize;
+
+    }
+
+    var astresArray = [];
+
+    function render() {
+        if (resizeRendererToDisplaySize(renderer)) {
+            const canvas = renderer.domElement;
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+        }
+
+        // update_mouse();
+        update_physics(clock.getDelta(), astresArray);
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+    }
+
+    function start(){
+        // tmpTrans = new Ammo.btTransform();
+
+        //setup_physics();
+        fetch_astres(astresArray);
+
+        setup_graphics();
+
+        requestAnimationFrame(render);
+    }
+
+    function fetch_astres(astresArray){
         $.ajax({
             url: "/astres.json",
             dataType: "json",
@@ -349,47 +474,13 @@ function update_mouse() {
 
                     var a = new Astres(name, o);
                     a.build_mesh();
-                    a.setup_physics();
+                    // a.setup_physics();
+                    astresArray.push(a);
                     scene.add(a.mesh);
                 }
             }
         });
     }
 
-    function resizeRendererToDisplaySize(renderer) {
-        const canvas = renderer.domElement;
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
-        const needResize = canvas.width !== width || canvas.height !== height;
-        if (needResize) {
-            renderer.setSize(width, height, false);
-        }
-        return needResize;
-    }
-
-    function render() {
-        if (resizeRendererToDisplaySize(renderer)) {
-            const canvas = renderer.domElement;
-            camera.aspect = canvas.clientWidth / canvas.clientHeight;
-            camera.updateProjectionMatrix();
-        }
-        update_mouse();
-        update_physics(deltaTime = clock.getDelta());
-        renderer.render(scene, camera);
-        requestAnimationFrame(render);
-    }
-
-
-    Ammo().then( start );
-    function start(){
-        tmpTrans = new Ammo.btTransform();
-
-        setup_physics();
-
-        setup_graphics();
-
-        requestAnimationFrame(render);
-    }
-
-
+    start();
 });
